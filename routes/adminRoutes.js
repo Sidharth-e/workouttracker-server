@@ -1,36 +1,36 @@
 const router = require("express").Router();
-const { Workout, validate } = require("../models/workout");
+const { User, validate } = require("../models/user");
 const bcrypt = require("bcrypt");
+const { Workout } = require("../models/workout");
 
 router.post("/", async (req, res) => {
   try {
     const { error } = validate(req.body);
-    console.log(error);
-    const userId = req.user._id;
+	console.log(error)
     if (error)
       return res.status(400).send({ message: error.details[0].message });
 
-    await new Workout({ userId, ...req.body }).save();
-    res.status(201).send({ message: "Workout added successfully" });
-  } catch (errors) {
+    const user = await User.findOne({ email: req.body.email });
+    if (user)
+      return res
+        .status(409)
+        .send({ message: "User with given email already Exist!" });
+
+    const salt = await bcrypt.genSalt(Number(process.env.SALT));
+    const hashPassword = await bcrypt.hash(req.body.password, salt);
+
+    await new User({ ...req.body, password: hashPassword }).save();
+    res.status(201).send({ message: "User created successfully" });
+  } catch (error) {
     res.status(500).send({ message: "Internal Server Error" });
   }
 });
 
 router.get("/", async (req, res) => {
   try {
-    const userId = req.user._id;
-    const workoutPlans = await Workout.find({ userId: userId });
-
-    if (!workoutPlans || workoutPlans.length === 0) {
-      return res
-        .status(404)
-        .send({ message: "No workout plans found for the user" });
-    }
-
-    res.status(200).send({ workoutPlans });
+    const records = await User.find();
+    res.status(200).send({ data: records, message: "Records" });
   } catch (error) {
-    console.error(error);
     res.status(500).send({ message: "Internal Server Error" });
   }
 });
@@ -55,47 +55,47 @@ router.get("/:date", async (req, res) => {
     res.status(500).send({ message: "Internal Server Error" });
   }
 });
-
-// Delete a workout plan by ID
 router.delete("/:id", async (req, res) => {
   try {
-    const workoutId = req.params.id;
+    const UserId = req.params.id;
     const userId = req.user._id; // Assuming you're using authentication middleware to get the user ID
 
-    const deletedWorkout = await Workout.findOneAndDelete({
-      _id: workoutId,
+    const deletedUser = await User.findOneAndDelete({
+      _id: UserId,
       userId: userId,
     });
 
-    if (!deletedWorkout) {
-      return res.status(404).send({ message: "notworkoutFound" });
+    if (!deletedUser) {
+      return res.status(404).send({ message: "User plan not found" });
     }
 
-    res.status(200).send({ message: "Workout plan deleted successfully" });
+    res.status(200).send({ message: "User deleted successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).send({ message: "Internal Server Error" });
   }
 });
+
 router.put("/:id", async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user._id; // Assuming you have user data in req.user
     const entryId = req.params.id;
-    const updatedEntry = await Workout.findOneAndUpdate(
+
+    // Find the entry by its _id and userId
+    const updatedEntry = await User.findOneAndUpdate(
       { _id: entryId, userId: userId },
-      { status: req.body.status }, // Update the status field
-      { new: true }
+      req.body, // Update the entry with the data from req.body
+      { new: true } // Return the updated entry
     );
 
     if (!updatedEntry) {
-      return res.status(404).send({ message: "Workout entry not found" });
+      return res.status(404).send({ message: "User entry not found" });
     }
 
-    res.status(200).send({ message: "Workout entry updated successfully" });
+    res.status(200).send({ message: "User entry updated successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).send({ message: "Internal Server Error" });
   }
 });
-
 module.exports = router;

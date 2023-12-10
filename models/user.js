@@ -14,10 +14,15 @@ const userSchema = new mongoose.Schema({
 	healthGoal: { type: String, required: true },
 	activityLevel: { type: String, required: true },
 	password: { type: String, required: true },
+	isAdmin: {
+        type: Boolean,
+        required: false,
+        default:false
+      },
 });
 
 userSchema.methods.generateAuthToken = function () {
-	const token = jwt.sign({ _id: this._id }, process.env.JWTPRIVATEKEY, {
+	const token = jwt.sign({ _id: this._id , role: this.isAdmin ? true : false }, process.env.JWTPRIVATEKEY, {
 		expiresIn: "7d",
 	});
 	return token;
@@ -36,6 +41,7 @@ const validate = (data) => {
 		weight: Joi.string().required().label("Weight"),
 		healthGoal: Joi.string().required().label("healthGoal"),
 		activityLevel: Joi.string().required().label("activityLevel"),
+		isAdmin: Joi.boolean().optional().label("isAdmin"),
 		password: passwordComplexity().required().label("Password"),
 	});
 	return schema.validate(data);

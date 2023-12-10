@@ -12,9 +12,10 @@ const workoutSchema = new mongoose.Schema({
   reps: { type: String, required: true },
   sets: { type: String, required: true },
   type: { type: String, required: true },
-  status:{type:String,required:false,default:"pending"}
+  status: { type: String, required: false, default: "pending" },
+  date: { type: Date, required: true },
+  videourl:{type:String,required:false}
 });
-
 
 const Workout = mongoose.model("Workout", workoutSchema);
 
@@ -28,10 +29,11 @@ const validate = (data) => {
     reps: Joi.string().required().label("reps"),
     sets: Joi.string().required().label("sets"),
     type: Joi.string().required().label("type"),
-
+    status: Joi.string().optional().label("type"),
+    date: Joi.date().required().label("Date"),
+    videourl:Joi.string().optional().label("URL")
   });
   return schema.validate(data);
 };
 
-
-module.exports = { Workout, validate  };
+module.exports = { Workout, validate };
